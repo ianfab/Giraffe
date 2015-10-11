@@ -34,6 +34,8 @@
 #include <cmath>
 #include <cassert>
 
+#include <omp.h>
+
 #include "matrix_ops.h"
 
 enum ActivationFunc
