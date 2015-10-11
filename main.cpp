@@ -143,6 +143,15 @@ int main(int argc, char **argv)
 	// if eval.net exists, use the ANN evaluator
 	// if both eval.net and meval.net exist, use the ANN move evaluator
 
+	if ((!FileReadable(EvalNetFilename) || !FileReadable(MoveEvalNetFilename)) &&
+			(argc == 1))
+	{
+		// in normal playing mode (giraffe run without argument), we should
+		// refuse to run without the net files
+		std::cout << "tellusererror " << "eval.net or meval.net not found in the working directory. Aborting." << std::endl;
+		return 0;
+	}
+
 	if (FileReadable(EvalNetFilename))
 	{
 		backend.SetEvaluator(&evaluator);
