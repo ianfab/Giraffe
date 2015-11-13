@@ -245,6 +245,11 @@ public:
 		return ret;
 	}
 
+	int32_t GetHalfMoveCount() const
+	{
+		return static_cast<int32_t>(m_undoStackBB.GetSize());
+	}
+
 private:
 	template <MOVE_TYPES MT> void GenerateAllPseudoLegalMoves_(MoveList &moveList) const;
 	template <MOVE_TYPES MT> void GenerateKingMoves_(Color color, MoveList &moveList) const;
