@@ -73,7 +73,7 @@ default: $(EXE)
 dep/%.d: %.cpp
 	$(Q) $(CXX) $(CXXFLAGS_DEP) $(INCLUDES) $< -MM -MT $(@:dep/%.d=obj/%.o) > $@
 	
-obj/%.o :
+obj/%.o: %.cpp
 	$(Q) $(CXX) $(CXXFLAGS) $(INCLUDES) -c $(@:obj/%.o=%.cpp) -o $@
 
 $(EXE): $(OBJS) gtb/libgtb.a
