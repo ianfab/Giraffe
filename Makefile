@@ -97,11 +97,11 @@ windows:
 	strip -g -s giraffe_w64.exe
 
 no_deps = 
-ifneq ($(MAKECMDGOALS),clean)
+ifeq ($(MAKECMDGOALS),clean)
 	no_deps = yes
 endif
 
-ifneq ($(MAKECMDGOALS),windows)
+ifeq ($(MAKECMDGOALS),windows)
 	no_deps = yes
 endif
 	
