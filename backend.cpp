@@ -26,7 +26,11 @@
 #include "gtb.h"
 
 Backend::Backend()
-	: m_mode(Backend::EngineMode_force), m_searchInProgress(false), m_maxDepth(0), m_showThinking(false),
+	: m_mode(Backend::EngineMode_force),
+	  m_searchInProgress(false),
+	  m_maxDepth(0),
+	  m_showThinking(false),
+	  m_pondering(false),
 	  m_whiteClock(ChessClock::CONVENTIONAL_INCREMENTAL_MODE, 0, 300, 0),
 	  m_blackClock(ChessClock::CONVENTIONAL_INCREMENTAL_MODE, 0, 300, 0),
 	  m_tTable(DEFAULT_TTABLE_SIZE / sizeof(TTEntry)),
@@ -393,6 +397,20 @@ void Backend::StartSearch_(Search::SearchType searchType)
 		{
 			m_whiteClock.Stop();
 			m_blackClock.Start();
+		}
+
+		if (m_pondering)
+		{
+			// we have to do this in a new thread so that the search thread itself can die
+			auto startPonderThreadFunc = [this]()
+			{
+				std::lock_guard<std::mutex> lock(m_mutex);
+				StopSearch_(lock);
+				StartSearch_(Search::SearchType_infinite);
+			};
+
+			std::thread t(startPonderThreadFunc);
+			t.detach();
 		}
 	};
 
