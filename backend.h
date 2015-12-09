@@ -63,6 +63,8 @@ public:
 
 	void SetAnalyzing(bool enabled);
 
+	void SetPondering(bool enabled) { std::lock_guard<std::mutex> lock(m_mutex); m_pondering = enabled; }
+
 	void Undo(int32_t moves);
 
 	void SetTimeControl(const ChessClock &cc)
@@ -121,6 +123,8 @@ private:
 	Search::Depth m_maxDepth;
 
 	bool m_showThinking;
+
+	bool m_pondering;
 
 	ChessClock m_whiteClock;
 	ChessClock m_blackClock;
