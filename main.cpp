@@ -785,11 +785,11 @@ int main(int argc, char **argv)
 		}
 		else if (cmd == "hard")
 		{
-			// TODO
+			backend.SetPondering(true);
 		}
 		else if (cmd == "easy")
 		{
-			// TODO
+			backend.SetPondering(false);
 		}
 		else if (cmd == "post")
 		{
