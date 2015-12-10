@@ -29,6 +29,8 @@ typedef Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> NNMat
 typedef Eigen::Matrix<FP, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> NNMatrixRM;
 typedef Eigen::Matrix<FP, 1, Eigen::Dynamic, Eigen::RowMajor> NNVector;
 
+typedef Eigen::Map<NNVector> VectorMap;
+
 using Eigen::MatrixBase;
 
 struct MatrixRegion
@@ -162,6 +164,11 @@ void MatrixMultiplyWithSemiSparse(const EigenA &a, const SemiSparseMatrix<EigenB
 	{
 		c.block(0, subMatrix.j, c.rows(), subMatrix.m.cols()) += a.block(0, subMatrix.i, a.rows(), subMatrix.m.rows()) * subMatrix.m;
 	}
+}
+
+inline VectorMap MapStdVector(std::vector<float> &v)
+{
+	return VectorMap(v.data(), 1, static_cast<int64_t>(v.size()));
 }
 
 #endif // MATRIX_OPS_H
