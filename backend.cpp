@@ -70,6 +70,8 @@ void Backend::Go()
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 
+	Force_(lock);
+
 	StopSearch_(lock);
 
 	if (m_currentBoard.GetSideToMove() == WHITE)
@@ -275,6 +277,8 @@ void Backend::Quit()
 {
 	std::lock_guard<std::mutex> lock(m_mutex);
 
+	Force_(lock);
+
 	StopSearch_(lock);
 }
 
@@ -287,12 +291,12 @@ bool Backend::IsAMove(const std::string &s)
 
 void Backend::Force_(std::lock_guard<std::mutex> &lock)
 {
+	m_mode = EngineMode_force;
+
 	StopSearch_(lock);
 
 	m_whiteClock.Stop();
 	m_blackClock.Stop();
-
-	m_mode = EngineMode_force;
 }
 
 void Backend::StopSearch_(std::lock_guard<std::mutex> &/*lock*/)
@@ -399,7 +403,9 @@ void Backend::StartSearch_(Search::SearchType searchType)
 			m_blackClock.Start();
 		}
 
-		if (m_pondering)
+		if (m_pondering &&
+				((m_currentBoard.GetSideToMove() == WHITE && m_mode == EngineMode_playingBlack) ||
+				 (m_currentBoard.GetSideToMove() == BLACK && m_mode == EngineMode_playingWhite)))
 		{
 			// we have to do this in a new thread so that the search thread itself can die
 			auto startPonderThreadFunc = [this]()
