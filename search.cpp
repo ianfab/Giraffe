@@ -56,7 +56,7 @@ namespace Search
 static const NodeBudget ID_MAX_NODE_BUDGET = 200000000000000000LL;
 
 AsyncSearch::AsyncSearch(RootSearchContext &context)
-	: m_context(context), m_done(false)
+	: m_context(context)
 {
 }
 
@@ -209,8 +209,6 @@ void AsyncSearch::RootSearch_()
 		std::string bestMove = m_context.startBoard.MoveToAlg(m_rootResult.pv[0]);
 		m_context.finalMoveFunc(bestMove);
 	}
-
-	m_done = true;
 }
 
 void AsyncSearch::SearchTimer_(double time)

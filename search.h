@@ -152,9 +152,6 @@ public:
 	void Abort()
 	{ std::lock_guard<std::mutex> lock(m_abortingMutex); m_context.stopRequest = true; m_cvAborting.notify_all(); }
 
-	// whether the search is done (or aborted)
-	bool Done() { return m_done; }
-
 	void Join() { if (m_thread.joinable()) { m_thread.join(); } }
 
 	// result is only defined once search is done
@@ -168,7 +165,6 @@ private:
 
 	RootSearchContext &m_context;
 	std::thread m_thread;
-	std::atomic<bool> m_done;
 
 	SearchResult m_rootResult;
 
