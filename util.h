@@ -35,6 +35,8 @@
 	#endif
 #endif
 
+#define UNUSED(x) (void)(x)
+
 inline double CurrentTime() { //returns current time
 	return static_cast<double>(
 				std::chrono::duration_cast<std::chrono::microseconds>(
