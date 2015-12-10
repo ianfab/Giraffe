@@ -120,15 +120,6 @@ FCANN<ACTF, ACTFLast>::FCANN(
 			// we have a fully connected layer
 			m_params.weightMasks.push_back(NNMatrix::Ones(in_size, out_size));
 		}
-
-		m_params.outputBiasLastUpdate.push_back(NNVector::Zero(out_size));
-		m_params.weightsLastUpdate.push_back(NNMatrix::Zero(in_size, out_size));
-
-		m_params.outputBiasEg2.push_back(NNVector::Zero(out_size));
-		m_params.weightsEg2.push_back(NNMatrix::Zero(in_size, out_size));
-
-		m_params.outputBiasRMSd2.push_back(NNVector::Zero(out_size));
-		m_params.weightsRMSd2.push_back(NNMatrix::Zero(in_size, out_size));
 	}
 
 	m_params.evalTmp.resize(hiddenLayers.size() + 2);
@@ -136,6 +127,7 @@ FCANN<ACTF, ACTFLast>::FCANN(
 
 	UpdateWeightMasksRegions_();
 	UpdateWeightSemiSparse_();
+	InitializeOptimizationState_();
 }
 
 template <ActivationFunc ACTF, ActivationFunc ACTFLast>
@@ -400,20 +392,21 @@ float FCANN<ACTF, ACTFLast>::TrainGDM(const MatrixBase<Derived1> &x, const Matri
 }
 
 template <ActivationFunc ACTF, ActivationFunc ACTFLast>
-void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float learningRate, float reg)
+void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float /*learningRate*/, float reg)
 {
 	assert(grad.weightGradients.size() == m_params.weights.size());
 	assert(grad.biasGradients.size() == m_params.outputBias.size());
 	assert(grad.weightGradients.size() == grad.biasGradients.size());
 
+	/* // for SGD + M
 	m_params.weightsLastUpdate.resize(m_params.weights.size());
 	m_params.outputBiasLastUpdate.resize(m_params.outputBias.size());
+	*/
 
-	m_params.weightsEg2.resize(m_params.weights.size());
-	m_params.outputBiasEg2.resize(m_params.outputBias.size());
-
-	m_params.weightsRMSd2.resize(m_params.weights.size());
-	m_params.outputBiasRMSd2.resize(m_params.outputBias.size());
+	if (m_params.weightsEg2.size() != m_params.weights.size())
+	{
+		InitializeOptimizationState_();
+	}
 
 	for (size_t layer = 0; layer < m_params.weights.size(); ++layer)
 	{
@@ -484,8 +477,8 @@ void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float lear
 				#endif
 
 				// update Eg2 (ADADELTA)
-				float decay = 0.99f;
-				float e = 1e-8f;
+				float decay = 0.95f;
+				float e = 1e-6f;
 				weightsEg2Block.array() *= decay;
 				weightsEg2Block.array() += (weightsGradientsBlock.array() * weightsGradientsBlock.array()) * (1.0f - decay);
 				biasEg2Block.array() *= decay;
@@ -498,9 +491,9 @@ void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float lear
 				//NNMatrix weightDelta = -weightsGradientsBlock.array() * learningRate /*+ weightReg.array()*/;
 				//NNVector biasDelta = -biasGradientsBlock.array() * learningRate;
 
-				weightsBlock += weightDelta * learningRate;
+				weightsBlock += weightDelta;
 				weightsBlock.array() *= weightMaskBlock.array();
-				biasBlock += biasDelta * learningRate;
+				biasBlock += biasDelta;
 
 				FP weightMax = std::max(std::max(weightsBlock.maxCoeff(), -weightsBlock.minCoeff()), std::max(biasBlock.maxCoeff(), -biasBlock.minCoeff()));
 				if (weightMax > MAX_WEIGHT)
@@ -778,6 +771,27 @@ void FCANN<ACTF, ACTFLast>::UpdateWeightSemiSparse_()
 
 	m_params.weightsSemiSparseCurrent = true;
 }
+
+
+template <ActivationFunc ACTF, ActivationFunc ACTFLast>
+void FCANN<ACTF, ACTFLast>::InitializeOptimizationState_()
+{
+	m_params.weightsEg2.resize(m_params.weights.size());
+	m_params.outputBiasEg2.resize(m_params.outputBias.size());
+
+	m_params.weightsRMSd2.resize(m_params.weights.size());
+	m_params.outputBiasRMSd2.resize(m_params.outputBias.size());
+
+	for (size_t i = 0; i < m_params.weights.size(); ++i)
+	{
+		m_params.outputBiasEg2[i] = NNVector::Zero(m_params.outputBias[i].cols());
+		m_params.weightsEg2[i] = NNMatrix::Zero(m_params.weights[i].rows(), m_params.weights[i].cols());
+
+		m_params.outputBiasRMSd2[i] = NNVector::Zero(m_params.outputBias[i].cols());
+		m_params.weightsRMSd2[i] = NNMatrix::Zero(m_params.weights[i].rows(), m_params.weights[i].cols());
+	}
+}
+
 
 /* serialization format:
  * numLayers

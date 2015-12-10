@@ -68,9 +68,10 @@ public:
 
 	void Deserialize(std::istream &is);
 
-	void Train(const std::vector<std::string> &positions, const NNMatrixRM &y, const std::vector<FeaturesConv::FeatureDescription> &featureDescriptions, float learningRate);
+	float Train(const NNMatrixRM &pred, EvalNet::Activations &act, const NNMatrixRM &targets);
 
-	void TrainLoop(const std::vector<std::string> &positions, const NNMatrixRM &y, int64_t epochs, const std::vector<FeaturesConv::FeatureDescription> &featureDescriptions);
+	// this is a special bulk evaluate for training
+	void EvaluateForWhiteMatrix(const NNMatrixRM &x, NNMatrixRM &pred, EvalNet::Activations &act);
 
 	void TrainBounds(const std::vector<std::string> &positions, const std::vector<FeaturesConv::FeatureDescription> &featureDescriptions, float learningRate);
 
