@@ -291,6 +291,26 @@ void PushSquareFeatures(std::vector<T> &ret, const Board &/*board*/, AttackMaps 
 	{
 		PushPosFloat(ret, sq, atkMaps.whiteCtrl[sq], group);
 		PushPosFloat(ret, sq, atkMaps.blackCtrl[sq], group + 1);
+
+		/*
+		PieceType pt = board.GetPieceAtSquare(sq);
+
+		if (pt == EMPTY)
+		{
+			PushPosFloat(ret, sq, 0.0f, group + 2);
+			PushPosFloat(ret, sq, 0.0f, group + 3);
+		}
+		else if (GetColor(pt) == WHITE)
+		{
+			PushPosFloat(ret, sq, NormalizeCount(SEE::SEE_MAT[board.GetPieceAtSquare(sq)], SEE::SEE_MAT[WK]), group + 2);
+			PushPosFloat(ret, sq, 0.0f, group + 3);
+		}
+		else if (GetColor(pt) == BLACK)
+		{
+			PushPosFloat(ret, sq, 0.0f, group + 2);
+			PushPosFloat(ret, sq, NormalizeCount(SEE::SEE_MAT[board.GetPieceAtSquare(sq)], SEE::SEE_MAT[WK]), group + 3);
+		}
+		*/
 	}
 
 	group += 2;

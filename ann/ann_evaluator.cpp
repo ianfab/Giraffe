@@ -60,18 +60,9 @@ void ANNEvaluator::Deserialize(std::istream &is)
 	InvalidateCache();
 }
 
-void ANNEvaluator::Train(const std::vector<std::string> &positions, const NNMatrixRM &y, const std::vector<FeaturesConv::FeatureDescription> &featureDescriptions, float learningRate)
+float ANNEvaluator::Train(const NNMatrixRM &pred, EvalNet::Activations &act, const NNMatrixRM &targets)
 {
-	auto x = BoardsToFeatureRepresentation_(positions, featureDescriptions);
-
-	NNMatrixRM predictions;
-	EvalNet::Activations act;
-
-	m_mainAnn.InitializeActivations(act);
-
-	predictions = m_mainAnn.ForwardPropagate(x, act);
-
-	NNMatrixRM errorsDerivative = ComputeErrorDerivatives_(predictions, y, act.actIn[act.actIn.size() - 1], 1.0f, 1.0f);
+	NNMatrixRM errorsDerivative = ComputeErrorDerivatives_(pred, targets, act.actIn[act.actIn.size() - 1], 1.0f, 1.0f);
 
 	EvalNet::Gradients grad;
 
@@ -79,18 +70,21 @@ void ANNEvaluator::Train(const std::vector<std::string> &positions, const NNMatr
 
 	m_mainAnn.BackwardPropagateComputeGrad(errorsDerivative, act, grad);
 
-	m_mainAnn.ApplyWeightUpdates(grad, learningRate, 0.0f);
+	m_mainAnn.ApplyWeightUpdates(grad, 1.0f, 0.0f);
 
 	InvalidateCache();
+
+	return ((pred - targets).array() * (pred - targets).array()).sum() / targets.rows();
 }
 
-void ANNEvaluator::TrainLoop(const std::vector<std::string> &positions, const NNMatrixRM &y, int64_t epochs, const std::vector<FeaturesConv::FeatureDescription> &featureDescriptions)
+void ANNEvaluator::EvaluateForWhiteMatrix(const NNMatrixRM &x, NNMatrixRM &pred, EvalNet::Activations &act)
 {
-	auto x = BoardsToFeatureRepresentation_(positions, featureDescriptions);
+	if (act.act.size() == 0)
+	{
+		m_mainAnn.InitializeActivations(act);
+	}
 
-	LearnAnn::TrainANN(x, y, m_mainAnn, epochs);
-
-	InvalidateCache();
+	pred = m_mainAnn.ForwardPropagate(x, act);
 }
 
 void ANNEvaluator::TrainBounds(const std::vector<std::string> &positions, const std::vector<FeaturesConv::FeatureDescription> &featureDescriptions, float learningRate)

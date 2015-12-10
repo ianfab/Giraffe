@@ -79,6 +79,16 @@ struct FeatureDescription
 template <typename T>
 void ConvertBoardToNN(Board &board, std::vector<T> &ret);
 
+inline int64_t GetNumFeatures()
+{
+	Board b;
+
+	std::vector<FeaturesConv::FeatureDescription> ret;
+	FeaturesConv::ConvertBoardToNN(b, ret);
+
+	return static_cast<int64_t>(ret.size());
+}
+
 // additional info for conversion
 struct ConvertMovesInfo
 {

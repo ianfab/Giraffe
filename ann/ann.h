@@ -172,6 +172,8 @@ private:
 
 	void UpdateWeightSemiSparse_();
 
+	void InitializeOptimizationState_();
+
 	// this is used to ensure network stability
 	constexpr static FP MAX_WEIGHT = 1000.0f;
 
