@@ -92,19 +92,6 @@ void ANNMoveEvaluator::Train(const std::vector<std::string> &positions, const st
 
 			FeaturesConv::ConvertMovesInfo convInfo;
 
-			SearchInfo si;
-
-			auto searchFunc = [this](Board &pos, Score /*lowerBound*/, Score /*upperBound*/, int64_t nodeBudget, int32_t /*ply*/) -> Score
-			{
-				Search::SearchResult result = Search::SyncSearchNodeLimited(pos, nodeBudget, &m_annEval, &gStaticMoveEvaluator);
-
-				return result.score;
-			};
-
-			si.totalNodeBudget = 1000000000;
-
-			si.searchFunc = searchFunc;
-
 			GenerateMoveConvInfo_(pos, ml, convInfo);
 
 			FeaturesConv::ConvertMovesToNN(pos, convInfo, ml, trainingSetBatch);
