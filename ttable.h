@@ -18,6 +18,7 @@
 #ifndef TTABLE_H
 #define TTABLE_H
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -26,6 +27,7 @@
 
 #include "types.h"
 #include "move.h"
+#include "board.h"
 
 enum TTEntryType
 {
@@ -48,6 +50,8 @@ struct TTEntry
 	NodeBudget nodeBudget;
 	TTEntryType entryType;
 };
+
+using TTEntryCallback = std::function<void(const Board &b, const TTEntry &)>;
 
 class TTable
 {
@@ -78,7 +82,7 @@ public:
 		__builtin_prefetch(&m_data[hash % m_data.size()]);
 	}
 
-	void Store(uint64_t hash, Move bestMove, Score score, NodeBudget nodeBudget, TTEntryType entryType);
+	void Store(const Board &b, Move bestMove, Score score, NodeBudget nodeBudget, TTEntryType entryType);
 
 	void AgeTable() { ++m_currentGeneration; }
 
@@ -93,10 +97,18 @@ public:
 		}
 	}
 
+	void SetStoreCallback(TTEntryCallback callback)
+	{
+		m_storeCallback = callback;
+	}
+
 private:
 	std::vector<TTEntry> m_data;
 
 	int32_t m_currentGeneration;
+
+	// during TreeStrap we have to record write to the ttable
+	TTEntryCallback m_storeCallback;
 };
 
 #endif // TTABLE_H

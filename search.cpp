@@ -275,15 +275,15 @@ Score Search(RootSearchContext &context, std::vector<Move> &pv, Board &board, Sc
 		{
 			if (ret >= beta)
 			{
-				context.transpositionTable->Store(board.GetHash(), pv.size() > 0 ? pv[0] : 0, ret, 0, LOWERBOUND);
+				context.transpositionTable->Store(board, pv.size() > 0 ? pv[0] : 0, ret, 0, LOWERBOUND);
 			}
 			else if (ret <= alpha)
 			{
-				context.transpositionTable->Store(board.GetHash(), 0, ret, 0, UPPERBOUND);
+				context.transpositionTable->Store(board, 0, ret, 0, UPPERBOUND);
 			}
 			else
 			{
-				context.transpositionTable->Store(board.GetHash(), pv.size() > 0 ? pv[0] : 0, ret, 0, EXACT);
+				context.transpositionTable->Store(board, pv.size() > 0 ? pv[0] : 0, ret, 0, EXACT);
 			}
 		}
 
@@ -397,7 +397,7 @@ Score Search(RootSearchContext &context, std::vector<Move> &pv, Board &board, Sc
 			{
 				if (ENABLE_TT)
 				{
-					context.transpositionTable->Store(board.GetHash(), 0, nmScore, originalNodeBudget, LOWERBOUND);
+					context.transpositionTable->Store(board, 0, nmScore, originalNodeBudget, LOWERBOUND);
 				}
 
 				return beta;
@@ -537,7 +537,7 @@ Score Search(RootSearchContext &context, std::vector<Move> &pv, Board &board, Sc
 		{
 			if (ENABLE_TT)
 			{
-				context.transpositionTable->Store(board.GetHash(), mv, score, originalNodeBudget, LOWERBOUND);
+				context.transpositionTable->Store(board, mv, score, originalNodeBudget, LOWERBOUND);
 			}
 
 			context.moveEvaluator->NotifyBestMove(board, si, miList, mv, numMovesSearched + 1);
@@ -573,13 +573,20 @@ Score Search(RootSearchContext &context, std::vector<Move> &pv, Board &board, Sc
 		}
 	}
 
+	if (originalNodeBudget == 64)
+	{
+		std::cout << "End" << std::endl;
+		std::cout << "Best score: " << bestScore << std::endl;
+		std::cout << "Alpha: " << alpha << std::endl;
+	}
+
 	if (!context.Stopping())
 	{
-		if (bestScore > alpha)
+		if (bestScore >= alpha)
 		{
 			if (ENABLE_TT)
 			{
-				context.transpositionTable->Store(board.GetHash(), pv[0], bestScore, originalNodeBudget, EXACT);
+				context.transpositionTable->Store(board, pv[0], bestScore, originalNodeBudget, EXACT);
 			}
 
 			context.moveEvaluator->NotifyBestMove(board, si, miList, pv[0], miList.GetSize());
@@ -589,7 +596,7 @@ Score Search(RootSearchContext &context, std::vector<Move> &pv, Board &board, Sc
 			// otherwise we failed low (and may have prunned all nodes)
 			if (ENABLE_TT)
 			{
-				context.transpositionTable->Store(board.GetHash(), pv.size() > 0 ? pv[0] : 0, bestScore, originalNodeBudget, UPPERBOUND);
+				context.transpositionTable->Store(board, pv.size() > 0 ? pv[0] : 0, bestScore, originalNodeBudget, UPPERBOUND);
 			}
 		}
 	}

@@ -29,8 +29,10 @@ void TTable::Resize(size_t newSize)
 	m_data.resize(newSize);
 }
 
-void TTable::Store(uint64_t hash, Move bestMove, Score score, NodeBudget nodeBudget, TTEntryType entryType)
+void TTable::Store(const Board &board, Move bestMove, Score score, NodeBudget nodeBudget, TTEntryType entryType)
 {
+	uint64_t hash = board.GetHash();
+
 	TTEntry *slot = &m_data[hash % m_data.size()];
 
 	bool replace = false;
@@ -55,6 +57,11 @@ void TTable::Store(uint64_t hash, Move bestMove, Score score, NodeBudget nodeBud
 		slot->nodeBudget = nodeBudget;
 		slot->entryType = entryType;
 		slot->birthday = m_currentGeneration;
+
+		if (m_storeCallback)
+		{
+			m_storeCallback(board, *slot);
+		}
 	}
 }
 
