@@ -7,7 +7,7 @@ HGVERSION:= $(shell hg parents --template '{node|short}')
 
 CXXFLAGS_BASE = \
 	-Wall -Wextra -Wno-unused-function -std=gnu++11 -mtune=native -Wa,-q -ffast-math \
-	-pthread -fopenmp -DHGVERSION="\"${HGVERSION}\"" -DEIGEN_DONT_PARALLELIZE
+	-pthread -fopenmp -DHGVERSION="\"${HGVERSION}\""
 
 # we will then extend this one with optimization flags
 CXXFLAGS:= $(CXXFLAGS_BASE)
@@ -18,9 +18,9 @@ CXXFLAGS_DEP = \
 LDFLAGS=-L. -Lgtb -lm -ltcmalloc -lgtb
 
 ifeq ($(PG), 1)
-	CXXFLAGS += -g -O2 -pg
+	CXXFLAGS += -g -Og -pg
 else ifeq ($(DEBUG),1)
-	CXXFLAGS += -g -O0
+	CXXFLAGS += -g -Og
 else
 	CXXFLAGS += -O3 -flto
 endif
