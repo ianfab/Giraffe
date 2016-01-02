@@ -573,13 +573,6 @@ Score Search(RootSearchContext &context, std::vector<Move> &pv, Board &board, Sc
 		}
 	}
 
-	if (originalNodeBudget == 64)
-	{
-		std::cout << "End" << std::endl;
-		std::cout << "Best score: " << bestScore << std::endl;
-		std::cout << "Alpha: " << alpha << std::endl;
-	}
-
 	if (!context.Stopping())
 	{
 		if (bestScore >= alpha)
