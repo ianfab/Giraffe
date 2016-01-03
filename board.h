@@ -18,7 +18,9 @@
 #ifndef BOARD_H
 #define BOARD_H
 
+#include <functional>
 #include <string>
+#include <sstream>
 
 #include "types.h"
 #include "board_consts.h"
@@ -84,6 +86,34 @@ public:
 		bool opponentRQOnSameY = false;
 		bool opponentBQOnSameDiag0 = false;
 		bool opponentBQOnSameDiag1 = false;
+	};
+
+	// these are features of the board that change slowly (used in eval caching)
+	struct SlowFeatures
+	{
+		Color stm;
+		Square wk;
+		Square bk;
+		uint64_t wp;
+		uint64_t bp;
+
+		uint8_t pieceCounts[NUM_PIECETYPES];
+
+		size_t Hash()
+		{
+			std::stringstream ss;
+
+			ss << stm << ' ' << wk << ' ' << bk << ' ' << wp << ' ' << bp << ' ';
+
+			for (uint32_t i = 0; i < NUM_PIECETYPES; ++i)
+			{
+				ss << pieceCounts[i] << ' ';
+			}
+
+			std::hash<std::string> hashFcn;
+
+			return hashFcn(ss.str());
+		}
 	};
 
 	typedef FixedVector<std::pair<uint8_t, uint64_t>, 7> UndoListBB; // list of bitboards to revert on undo
@@ -234,6 +264,20 @@ public:
 
 	// 0 = last move, 1 = last move - 1, etc
 	Optional<Move> GetMoveFromLast(int32_t n);
+
+	void GetSlowFeatures(SlowFeatures &sf)
+	{
+		sf.stm = GetSideToMove();
+		sf.wk = BitScanForward(m_boardDescBB[WK]);
+		sf.bk = BitScanForward(m_boardDescBB[BK]);
+		sf.wp = m_boardDescBB[WP];
+		sf.bp = m_boardDescBB[BP];
+
+		for (uint32_t i = 0; i < NUM_PIECETYPES; ++i)
+		{
+			sf.pieceCounts[i] = PopCount(m_boardDescBB[PIECE_TYPE_INDICES[i]]);
+		}
+	}
 
 	bool IsChecking(Move mv)
 	{
