@@ -18,6 +18,7 @@
 #include "ann_evaluator.h"
 
 #include <fstream>
+#include <set>
 
 #include "consts.h"
 
@@ -75,6 +76,16 @@ float ANNEvaluator::Train(const NNMatrixRM &pred, EvalNet::Activations &act, con
 	InvalidateCache();
 
 	return ((pred - targets).array() * (pred - targets).array()).sum() / targets.rows();
+}
+
+float ANNEvaluator::Train(const NNMatrixRM &positions, const NNMatrixRM &targets)
+{
+	// in this version (where we don't have predictions already) we can simply call ANN's TrainGDM
+	float e = m_mainAnn.TrainGDM(positions, targets, 1.0f, 1.0f);
+
+	InvalidateCache();
+
+	return e;
 }
 
 void ANNEvaluator::EvaluateForWhiteMatrix(const NNMatrixRM &x, NNMatrixRM &pred, EvalNet::Activations &act)
@@ -135,6 +146,31 @@ Score ANNEvaluator::EvaluateForWhiteImpl(Board &b, Score lowerBound, Score upper
 	{
 		return *hashResult;
 	}
+
+	/*
+	static uint64_t hits = 0;
+	static uint64_t misses = 0;
+	static std::set<size_t> seen;
+
+	Board::SlowFeatures sf;
+	b.GetSlowFeatures(sf);
+	size_t hash = sf.Hash();
+
+	if (seen.find(hash) != seen.end())
+	{
+		++hits;
+	}
+	else
+	{
+		++misses;
+		seen.insert(hash);
+	}
+
+	if (((misses + hits) % 1000000) == 0)
+	{
+		std::cout << hits << "/" << misses << " (" << (static_cast<float>(hits) / (hits + misses)) << ")" << std::endl;
+	}
+	*/
 
 	FeaturesConv::ConvertBoardToNN(b, m_convTmp);
 
