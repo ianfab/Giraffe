@@ -70,6 +70,8 @@ public:
 
 	float Train(const NNMatrixRM &pred, EvalNet::Activations &act, const NNMatrixRM &targets);
 
+	float Train(const NNMatrixRM &positions, const NNMatrixRM &targets);
+
 	// this is a special bulk evaluate for training
 	void EvaluateForWhiteMatrix(const NNMatrixRM &x, NNMatrixRM &pred, EvalNet::Activations &act);
 
