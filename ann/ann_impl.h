@@ -31,6 +31,15 @@
 #include "omp_scoped_thread_limiter.h"
 #include "random_device.h"
 
+#define SGDM
+//#define ADADELTA
+
+#if defined(SGDM) && defined(ADADELTA)
+#error Only select one training method!
+#elif !defined(SGDM) && !defined(ADADELTA)
+#error Must select one training method!
+#endif
+
 inline void EnableNanInterrupt()
 {
 	_MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID);
@@ -398,11 +407,6 @@ void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float /*le
 	assert(grad.biasGradients.size() == m_params.outputBias.size());
 	assert(grad.weightGradients.size() == grad.biasGradients.size());
 
-	/* // for SGD + M
-	m_params.weightsLastUpdate.resize(m_params.weights.size());
-	m_params.outputBiasLastUpdate.resize(m_params.outputBias.size());
-	*/
-
 	if (m_params.weightsEg2.size() != m_params.weights.size())
 	{
 		InitializeOptimizationState_();
@@ -428,13 +432,19 @@ void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float /*le
 				auto weightsGradientsBlock = grad.weightGradients[layer].block(0, begin, inSize, numCols);
 				auto biasGradientsBlock = grad.biasGradients[layer].block(0, begin, 1, numCols);
 
+				auto weightMaskBlock = m_params.weightMasks[layer].block(0, begin, inSize, numCols);
+
+				#ifdef ADADELTA
 				auto weightsEg2Block = m_params.weightsEg2[layer].block(0, begin, inSize, numCols);
 				auto biasEg2Block = m_params.outputBiasEg2[layer].block(0, begin, 1, numCols);
-
 				auto weightsRMSd2Block = m_params.weightsRMSd2[layer].block(0, begin, inSize, numCols);
 				auto biasRMSd2Block = m_params.outputBiasRMSd2[layer].block(0, begin, 1, numCols);
+				#endif
 
-				auto weightMaskBlock = m_params.weightMasks[layer].block(0, begin, inSize, numCols);
+				#ifdef SGDM
+				auto weightsLastUpdateBlock = m_params.weightsLastUpdate[layer].block(0, begin, inSize, numCols);
+				auto outputBiasLastUpdateBlock = m_params.outputBiasLastUpdate[layer].block(0, begin, 1, numCols);
+				#endif
 
 				#define L1_REG
 				#ifdef L1_REG
@@ -476,20 +486,24 @@ void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float /*le
 				NNMatrix weightReg = NNMatrix::Zero(weightsBlock.rows(), weightsBlock.cols());
 				#endif
 
-				// update Eg2 (ADADELTA)
-				float decay = 0.95f;
-				float e = 1e-6f;
+				#ifdef ADADELTA
+				float decay = 0.9f;
+				float e = 1e-7f;
 				weightsEg2Block.array() *= decay;
 				weightsEg2Block.array() += (weightsGradientsBlock.array() * weightsGradientsBlock.array()) * (1.0f - decay);
 				biasEg2Block.array() *= decay;
 				biasEg2Block.array() += (biasGradientsBlock.array() * biasGradientsBlock.array()) * (1.0f - decay);
 
-				// ADADELTA
-				NNMatrix weightDelta = -weightsGradientsBlock.array() * (weightsRMSd2Block.array() + e).sqrt() / (weightsEg2Block.array() + e).sqrt() + weightReg.array();
+				NNMatrix weightDelta = -weightsGradientsBlock.array() * (weightsRMSd2Block.array() + e).sqrt() / (weightsEg2Block.array() + e).sqrt() /*+ weightReg.array()*/;
 				NNVector biasDelta = -biasGradientsBlock.array() * (biasRMSd2Block.array() + e).sqrt() / (biasEg2Block.array() + e).sqrt();
+				#endif
 
-				//NNMatrix weightDelta = -weightsGradientsBlock.array() * learningRate /*+ weightReg.array()*/;
-				//NNVector biasDelta = -biasGradientsBlock.array() * learningRate;
+				#ifdef SGDM
+				float lr = 0.000001f;
+				float momentum = 0.95f;
+				NNMatrix weightDelta = -weightsGradientsBlock.array() * lr + momentum * weightsLastUpdateBlock.array()/*+ weightReg.array()*/;
+				NNVector biasDelta = -biasGradientsBlock.array() * lr + momentum * outputBiasLastUpdateBlock.array();
+				#endif
 
 				weightsBlock += weightDelta;
 				weightsBlock.array() *= weightMaskBlock.array();
@@ -501,11 +515,17 @@ void FCANN<ACTF, ACTFLast>::ApplyWeightUpdates(const Gradients &grad, float /*le
 					throw LearningRateException();
 				}
 
-				// ADADELTA
+				#ifdef ADADELTA
 				weightsRMSd2Block *= decay;
 				weightsRMSd2Block.array() += weightDelta.array() * weightDelta.array() * (1.0f - decay);
 				biasRMSd2Block *= decay;
 				biasRMSd2Block.array() += biasDelta.array() * biasDelta.array() * (1.0f - decay);
+				#endif
+
+				#ifdef SGDM
+				weightsLastUpdateBlock = weightDelta;
+				outputBiasLastUpdateBlock = biasDelta;
+				#endif
 			}
 
 		} // parallel
@@ -782,6 +802,9 @@ void FCANN<ACTF, ACTFLast>::InitializeOptimizationState_()
 	m_params.weightsRMSd2.resize(m_params.weights.size());
 	m_params.outputBiasRMSd2.resize(m_params.outputBias.size());
 
+	m_params.weightsLastUpdate.resize(m_params.weights.size());
+	m_params.outputBiasLastUpdate.resize(m_params.outputBias.size());
+
 	for (size_t i = 0; i < m_params.weights.size(); ++i)
 	{
 		m_params.outputBiasEg2[i] = NNVector::Zero(m_params.outputBias[i].cols());
@@ -789,6 +812,9 @@ void FCANN<ACTF, ACTFLast>::InitializeOptimizationState_()
 
 		m_params.outputBiasRMSd2[i] = NNVector::Zero(m_params.outputBias[i].cols());
 		m_params.weightsRMSd2[i] = NNMatrix::Zero(m_params.weights[i].rows(), m_params.weights[i].cols());
+
+		m_params.outputBiasLastUpdate[i] = NNVector::Zero(m_params.outputBias[i].cols());
+		m_params.weightsLastUpdate[i] = NNMatrix::Zero(m_params.weights[i].rows(), m_params.weights[i].cols());
 	}
 }
 
