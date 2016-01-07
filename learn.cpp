@@ -100,14 +100,18 @@ void TDL(const std::string &positionsFilename)
 
 	int64_t numFeatures = FeaturesConv::GetNumFeatures();
 
+	std::cout << "Number of features: " << numFeatures << std::endl;
+
 	ANNEvaluator annEval;
 	annEval.BuildANN(numFeatures);
+
+	std::cout << "Eval net built" << std::endl;
 
 	for (int64_t iteration = 0; iteration < NumIterations; ++iteration)
 	{
 		std::cout << "Iteration " << iteration << " ====================================" << std::endl;
 
-		if (iteration == 0 && false)
+		if (iteration == 0)
 		{
 			auto rng = gRd.MakeMT();
 			auto positionDist = std::uniform_int_distribution<size_t>(0, rootPositions.size() - 1);
