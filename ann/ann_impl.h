@@ -31,8 +31,8 @@
 #include "omp_scoped_thread_limiter.h"
 #include "random_device.h"
 
-#define SGDM
-//#define ADADELTA
+//#define SGDM
+#define ADADELTA
 
 #if defined(SGDM) && defined(ADADELTA)
 #error Only select one training method!

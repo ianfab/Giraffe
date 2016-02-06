@@ -415,19 +415,22 @@ MoveEvalNet BuildMoveEvalNet(int64_t inputDims, int64_t outputDims)
 	Group layer0SquareGroup;
 
 	// first we add the mixed global group
-	AddSingleNodesGroup(layer0, globalGroup, layer0GlobalGroup, 0.1f);
+	AddSingleNodesGroup(layer0, globalGroup, layer0GlobalGroup, 0.2f);
 
 	// mixed square group
-	AddSingleNodesGroup(layer0, squareGroup, layer0SquareGroup, 0.1f);
+	AddSingleNodesGroup(layer0, squareGroup, layer0SquareGroup, 0.2f);
 
 	// pass through group 0 (this contains game phase and move-specific information)
 	AddSingleNodesGroup(layer0, group0, layer0Group0, 0.5f);
 
-	layerSizes.push_back(layer0.layerSize);
-	connMatrices.push_back(layer0.connections);
+	//layerSizes.push_back(layer0.layerSize);
+	//connMatrices.push_back(layer0.connections);
+
+	layerSizes.push_back(256);
+	connMatrices.push_back(std::vector<Eigen::Triplet<float> >());
 
 	// in the second layer, we just fully connect everything
-	layerSizes.push_back(BoardSignatureSize);
+	layerSizes.push_back(64);
 	connMatrices.push_back(std::vector<Eigen::Triplet<float> >());
 
 	// fully connected output layer
