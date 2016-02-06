@@ -22,9 +22,9 @@ To use Gaviota tablebases with the Wb2Uci adapter, set "GaviotaTbPath=..." in Wb
 ## Training ##
 Training Giraffe is a multi-step process that will take more than a week on a quad core machine if you want the highest quality results. Using a higher core count machine is recommended (about 3 days on a 20 cores Haswell Xeon).
 
-1. Prepare a large file with many positions from real games. One line per position in FEN, that's all. No labels are needed. They don't have to be high quality games. I have extracted 5 million random positions from a CCRL dump. It's available for download on the Downloads page. Let's call this file ccrl.fen
+* Prepare a large file with many positions from real games. One line per position in FEN, that's all. No labels are needed. They don't have to be high quality games. I have extracted 5 million random positions from a CCRL dump. It's available for download on the Downloads page. Let's call this file ccrl.fen
 
-2. Train the evaluation network:
+* Train the evaluation network:
 
 ```
 #!bash
@@ -38,7 +38,7 @@ Copy the latest file from trainingResults/ into the parent directory (where gira
 
 It converges in about 72 hours on a 20-core Haswell Xeon (there is currently no automatic convergence detection, so you have to test snapshots periodically yourself, using whatever method you want - I used the STS).
 
-3. Generate a database of inner nodes for training the move evaluator network:
+* Generate a database of inner nodes for training the move evaluator network:
 This requires modifying the source code. Go to static_move_evaluator.h, and uncomment "//#define SAMPLING".
 
 Then run:
@@ -47,13 +47,13 @@ Then run:
 OMP_NUM_THREADS=n ./giraffe sample_internal ccrl.fen internal.fen
 ```
 
-4. Label the internal positions for training the move evaluator network:
+* Label the internal positions for training the move evaluator network:
 ```
 #!bash
 OMP_NUM_THREADS=n ./giraffe label_bm internal.fen internal_labeled.fen
 ```
 
-5. Finally, we can train the move evaluator network:
+* Finally, we can train the move evaluator network:
 ```
 #!bash
 OMP_NUM_THREADS=n ./giraffe train_move_eval internal_labeled.fen meval.net
