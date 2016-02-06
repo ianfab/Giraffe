@@ -18,7 +18,10 @@
 #ifndef BOARD_H
 #define BOARD_H
 
+#include <functional>
 #include <string>
+#include <sstream>
+#include <cstddef>
 
 #include "types.h"
 #include "board_consts.h"
@@ -30,33 +33,34 @@ const static std::string DEFAULT_POSITION_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPP
 // these definitions are used as indices for the board description arrays
 // all aspects of a position are in the 2 arrays (one for bitboards, one for byte fields, including mailbox representation) for ease of undo-ing moves
 
+// the first array starts with bitboards for each of the 12 piece types
 // 0x0 to 0xd are used for storing piece bitboards
-const static uint32_t WHITE_OCCUPIED = 0x6;
-const static uint32_t BLACK_OCCUPIED = 0xe;
-const static uint32_t EN_PASS_SQUARE = 0x10; // stored as a bitboard since we have 64 bits anyways
-const static uint32_t BOARD_HASH = 0x11;
+const static ptrdiff_t WHITE_OCCUPIED = 0x6;
+const static ptrdiff_t BLACK_OCCUPIED = 0xe;
+const static ptrdiff_t EN_PASS_SQUARE = 0x10; // stored as a bitboard since we have 64 bits anyways
+const static ptrdiff_t BOARD_HASH = 0x11;
 
-const static uint32_t HASH = 0x12;
+const static ptrdiff_t HASH = 0x12;
 
-const static uint32_t BOARD_DESC_BB_SIZE = 0x13;
+const static ptrdiff_t BOARD_DESC_BB_SIZE = 0x13;
 
-// we also keep a mailbox representation of the board, from 0x0 to 0x3F (64 squares)
-
+// the second array starts with a mailbox representation of the board, from 0x0 to 0x3F
+// we also keep track of misc things in this array
 // castling rights
-const static uint32_t W_SHORT_CASTLE = 0x40;
-const static uint32_t W_LONG_CASTLE = 0x41;
-const static uint32_t B_SHORT_CASTLE = 0x42;
-const static uint32_t B_LONG_CASTLE = 0x43;
+const static ptrdiff_t W_SHORT_CASTLE = 0x40;
+const static ptrdiff_t W_LONG_CASTLE = 0x41;
+const static ptrdiff_t B_SHORT_CASTLE = 0x42;
+const static ptrdiff_t B_LONG_CASTLE = 0x43;
 
-const static uint32_t SIDE_TO_MOVE = 0x44;
+const static ptrdiff_t SIDE_TO_MOVE = 0x44;
 
 // half moves clock will overflow at 256 here, but hopefully that won't happen very often
 // the engine shouldn't crash regardless (just misevaluate draw)
-const static uint32_t HALF_MOVES_CLOCK = 0x45; // number of half moves since last irreversible move (for 50 moves detection)
+const static ptrdiff_t HALF_MOVES_CLOCK = 0x45; // number of half moves since last irreversible move (for 50 moves detection)
 
-const static uint32_t IN_CHECK = 0x46; // whether the moving side is in check (this is updated on each board change, so we don't have to recompute many times)
+const static ptrdiff_t IN_CHECK = 0x46; // whether the moving side is in check (this is updated on each board change, so we don't have to recompute many times)
 
-const static uint32_t BOARD_DESC_U8_SIZE = 0x47;
+const static ptrdiff_t BOARD_DESC_U8_SIZE = 0x47;
 
 class Board
 {
@@ -84,6 +88,34 @@ public:
 		bool opponentRQOnSameY = false;
 		bool opponentBQOnSameDiag0 = false;
 		bool opponentBQOnSameDiag1 = false;
+	};
+
+	// these are features of the board that change slowly (used in eval caching)
+	struct SlowFeatures
+	{
+		Color stm;
+		Square wk;
+		Square bk;
+		uint64_t wp;
+		uint64_t bp;
+
+		uint8_t pieceCounts[NUM_PIECETYPES];
+
+		size_t Hash()
+		{
+			std::stringstream ss;
+
+			ss << stm << ' ' << wk << ' ' << bk << ' ' << wp << ' ' << bp << ' ';
+
+			for (uint32_t i = 0; i < NUM_PIECETYPES; ++i)
+			{
+				ss << pieceCounts[i] << ' ';
+			}
+
+			std::hash<std::string> hashFcn;
+
+			return hashFcn(ss.str());
+		}
 	};
 
 	typedef FixedVector<std::pair<uint8_t, uint64_t>, 7> UndoListBB; // list of bitboards to revert on undo
@@ -234,6 +266,20 @@ public:
 
 	// 0 = last move, 1 = last move - 1, etc
 	Optional<Move> GetMoveFromLast(int32_t n);
+
+	void GetSlowFeatures(SlowFeatures &sf)
+	{
+		sf.stm = GetSideToMove();
+		sf.wk = BitScanForward(m_boardDescBB[WK]);
+		sf.bk = BitScanForward(m_boardDescBB[BK]);
+		sf.wp = m_boardDescBB[WP];
+		sf.bp = m_boardDescBB[BP];
+
+		for (uint32_t i = 0; i < NUM_PIECETYPES; ++i)
+		{
+			sf.pieceCounts[i] = PopCount(m_boardDescBB[PIECE_TYPE_INDICES[i]]);
+		}
+	}
 
 	bool IsChecking(Move mv)
 	{
