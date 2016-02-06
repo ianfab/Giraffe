@@ -1,0 +1,21 @@
+// This file includes all cpp files to be compiled
+// We recompile everything every time to get good performance
+// on toolchains that don't support link-time optimizations
+
+#include "magic_moves.cpp"
+#include "board_consts.cpp"
+#include "board.cpp"
+#include "ttable.cpp"
+#include "eval/eval.cpp"
+#include "see.cpp"
+#include "killer.cpp"
+#include "search.cpp"
+#include "chessclock.cpp"
+#include "timeallocator.cpp"
+#include "backend.cpp"
+#include "zobrist.cpp"
+#include "ann/learn_ann.cpp"
+#include "ann/features_conv.cpp"
+#include "learn.cpp"
+#include "random_device.cpp"
+#include "main.cpp"
